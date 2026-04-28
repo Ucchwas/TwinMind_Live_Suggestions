@@ -120,16 +120,6 @@ Implemented:
 - User-provided Groq API key in settings
 - Editable prompts and context-window settings
 
-## PDF Notes
-
-I did not find any hidden prompt text in the PDF metadata, extracted text, or annotations.
-
-I did find one non-obvious item:
-
-- Page 1 contains a hidden clickable link annotation to the reference prototype:
-  `https://claude.ai/public/artifacts/2d262df0-0353-47cc-a03a-de434aaa2552`
-
-That link is not visible in the extracted text, but it is embedded as the prototype reference. I could not inspect the page contents directly from this environment because the public artifact is behind a Cloudflare challenge.
 
 ## Tradeoffs
 
