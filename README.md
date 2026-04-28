@@ -1,153 +1,121 @@
 # TwinMind Live Suggestions
 
-A three-column meeting copilot built for the TwinMind live suggestions assignment.
+A live meeting workspace for the TwinMind assignment. It records microphone audio, turns the conversation into rolling transcript chunks, and keeps a fresh set of three practical suggestions available while the discussion is still happening.
 
-- Left column: microphone controls plus rolling transcript chunks
-- Middle column: fresh batches of 3 live suggestions every refresh
-- Right column: continuous chat for expanded suggestion answers and direct questions
+## Live Demo
 
-The app uses Groq for every model call:
+https://livesuggestions-l37eyml0x-ucchwas-projects.vercel.app/
 
-- `whisper-large-v3` for speech-to-text
-- `openai/gpt-oss-120b` for live suggestions and chat
+## What It Does
 
-## How To Run
+- Records microphone audio from the browser
+- Transcribes audio in roughly 30-second chunks
+- Shows the transcript in a left-side rolling feed
+- Generates exactly 3 live suggestions on each refresh
+- Keeps the newest suggestion batch at the top while preserving older batches
+- Opens a detailed answer in the right-side chat when a suggestion is clicked
+- Supports direct chat questions in the same session
+- Exports the full session as JSON, including transcript, suggestion batches, chat history, and timestamps
+- Lets the user edit prompts and context-window settings from the Settings drawer
 
-1. Install dependencies:
+## Model Choices
 
-   ```bash
-   npm install
-   ```
+All model calls go through Groq, as required by the assignment:
 
-2. Start the development server:
+- Transcription: `whisper-large-v3`
+- Suggestions and chat: `openai/gpt-oss-120b`
 
-   ```bash
-   npm run dev
-   ```
-
-3. Open `http://localhost:3000`
-4. Open `Settings`
-5. Paste your Groq API key
-6. Start recording
-
-## What The Project Does
-
-- Captures microphone audio in the browser with `MediaRecorder`
-- Flushes transcript chunks roughly every 30 seconds and on manual refresh
-- Sends each chunk to a Next.js route that proxies Groq Whisper transcription
-- Generates exactly 3 live suggestions from recent transcript context
-- Keeps the newest suggestion batch at the top while preserving older batches below
-- Lets the user click any suggestion to add it to chat and stream a deeper answer
-- Lets the user ask direct questions in the same chat session
-- Exports transcript, suggestion batches, and chat history as JSON with timestamps
-- Lets the user edit prompts and context-window settings in the UI
-
-## Stack
-
-- Next.js 16 App Router
-- React 19
-- TypeScript
-- Native `fetch` route handlers for Groq integration
-- CSS in `src/app/globals.css`
+The app does not ship with an API key. Each user pastes their own Groq key in Settings, and the key is stored only in that browser's local storage.
 
 ## Prompt Strategy
 
-### Live Suggestions
+The main goal is to make each refresh useful without requiring the user to click anything. Suggestion previews are intentionally written to carry immediate value on their own, while the clicked answer gives more depth when the user wants it.
 
-The live suggestion prompt is tuned for the main assignment goal: show the right mix of useful cards at the right moment.
+Live suggestions are asked to balance a few modes depending on the transcript:
 
-It explicitly asks the model to:
+- A question the user could ask next
+- A concise talking point
+- A direct answer to something that came up
+- A factual check or correction
+- Clarifying context that would help the conversation move forward
 
-- Return exactly 3 suggestions
-- Prefer immediate usefulness over generic advice
-- Mix suggestion types when the transcript supports it
-- Avoid repeating recent angles
-- Make each preview helpful even before the card is clicked
+The suggestion route also sends a short memory of recent suggestion previews so new batches avoid repeating the same angle unless the conversation has clearly returned to it.
 
-The app also sends a short memory of prior suggestions so the model can avoid redundant batches.
+Clicked suggestions use a separate prompt. That prompt treats the selected card as the immediate task and uses the transcript as meeting context, so the answer feels ready to use rather than like a generic explanation.
 
-### Clicked Suggestion Answers
-
-Clicked suggestions use a separate prompt focused on "expand this into something I can use right now in the meeting." By default, clicked suggestions use the full transcript context.
-
-### Direct Chat
-
-Direct chat uses a separate prompt and its own transcript-window setting so freeform questions can stay faster and more controllable than suggestion expansions.
+Direct chat has its own prompt and context window. This keeps typed questions responsive while still grounding answers in the transcript and recent chat history.
 
 ## Editable Settings
 
-The settings drawer exposes:
+The Settings drawer exposes:
 
 - Groq API key
 - Transcription language
-- Suggestion context chunks
-- Clicked-suggestion context chunks
-- Direct chat context chunks
+- Suggestion transcript context window
+- Clicked-suggestion transcript context window
+- Direct-chat transcript context window
 - Chat history turns
 - Transcription prompt
-- Live suggestions prompt
+- Live suggestion prompt
 - Expanded-answer prompt
 - Direct chat prompt
 
-`0` means "use the full transcript" for the clicked-suggestion and direct-chat transcript windows.
+For clicked-suggestion and direct-chat transcript windows, `0` means the full transcript is used.
 
-## Architecture
+## How To Run Locally
 
-- [`src/components/session-workspace.tsx`](./src/components/session-workspace.tsx) contains the client-side session flow, recording logic, suggestion timeline, chat UI, export, and settings drawer.
-- [`src/app/api/transcribe/route.ts`](./src/app/api/transcribe/route.ts) proxies Groq Whisper transcription.
-- [`src/app/api/suggestions/route.ts`](./src/app/api/suggestions/route.ts) builds a recent transcript prompt and requests JSON suggestions.
-- [`src/app/api/chat/route.ts`](./src/app/api/chat/route.ts) streams detailed answers or direct chat responses from Groq.
-- [`src/lib/default-settings.ts`](./src/lib/default-settings.ts) stores the default prompts and tunable parameters.
-- [`src/lib/groq.ts`](./src/lib/groq.ts) centralizes Groq model IDs and transcript helpers.
+Install dependencies:
 
-## Requirement Coverage
+```bash
+npm install
+```
 
-Implemented:
+Start the development server:
 
-- Start/stop mic control
-- Transcript appended in roughly 30-second chunks while recording
-- Transcript auto-scroll
-- Automatic transcript and suggestion refresh every ~30 seconds while recording
-- Manual refresh button
-- Exactly 3 suggestions per refresh
-- New suggestion batch appears on top
-- Older suggestion batches remain visible
-- Suggestion cards show useful previews before click
-- Suggestion click adds the selection to chat and streams a deeper answer
-- Direct user questions in chat
-- One continuous in-memory chat session
-- Export button for transcript, suggestion batches, and chat history with timestamps
-- User-provided Groq API key in settings
-- Editable prompts and context-window settings
+```bash
+npm run dev
+```
 
-## PDF Notes
+Then open:
 
-I did not find any hidden prompt text in the PDF metadata, extracted text, or annotations.
+```text
+http://localhost:3000
+```
 
-I did find one non-obvious item:
+Open Settings, paste a Groq API key, and start the mic.
 
-- Page 1 contains a hidden clickable link annotation to the reference prototype:
-  `https://claude.ai/public/artifacts/2d262df0-0353-47cc-a03a-de434aaa2552`
+## Project Structure
 
-That link is not visible in the extracted text, but it is embedded as the prototype reference. I could not inspect the page contents directly from this environment because the public artifact is behind a Cloudflare challenge.
+- `src/components/session-workspace.tsx` handles the client-side session flow, recording, transcript state, suggestion timeline, chat panel, export, and settings drawer.
+- `src/app/api/transcribe/route.ts` proxies browser audio chunks to Groq transcription.
+- `src/app/api/suggestions/route.ts` builds the live suggestion request and validates the 3-suggestion response.
+- `src/app/api/chat/route.ts` streams detailed suggestion answers and direct chat responses.
+- `src/lib/default-settings.ts` contains the default prompts and tunable values.
+- `src/lib/groq.ts` centralizes Groq endpoints, model IDs, and transcript formatting helpers.
+
+## Stack
+
+- Next.js App Router
+- React
+- TypeScript
+- Native browser `MediaRecorder`
+- Groq API
+- Plain CSS
 
 ## Tradeoffs
 
-- Audio chunking is browser-native and simple, which keeps the project easy to deploy, but it depends on `MediaRecorder` support in the user browser.
-- Suggestions refresh on chunk boundaries and manual refresh, which matches the assignment and keeps the behavior understandable, but it is not word-by-word realtime.
-- The Groq API key is stored in browser local storage for convenience because the assignment requires the user to paste their own key.
-- Chat is streamed, while suggestions are returned as structured JSON for determinism.
+Audio capture uses the browser's built-in `MediaRecorder`, which keeps the app simple and easy to deploy. The tradeoff is that recording support depends on the user's browser.
+
+Suggestions refresh on chunk boundaries and manual refresh. That matches the assignment's 30-second rhythm and keeps the experience predictable, though it is not word-by-word realtime.
+
+Chat responses stream as text for lower perceived latency. Suggestions use structured JSON instead, because the UI needs exactly three clean cards every time.
 
 ## Verification
 
-Verified with:
+Checked with:
 
 ```bash
 npm run lint
 npm run typecheck
 npm run build
 ```
-
-## Deployment
-
-The app is ready to deploy on Vercel or another Next.js-friendly host. After deployment, the user only needs to paste their own Groq API key in the settings drawer.
